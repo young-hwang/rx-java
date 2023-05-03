@@ -17,8 +17,9 @@ public class PubSub {
     public static void main(String[] args) {
         Publisher<Integer> publisher = iterPub(Stream.iterate(1, a -> a + 1).limit(10).collect(Collectors.toList()));
         Publisher<Integer> mapPublisher = mapPub(publisher, s -> s * 10);
+        Publisher<Integer> mapPublisher2 = mapPub(mapPublisher, s -> -s);
 
-        mapPublisher.subscribe(logSub());
+        mapPublisher2.subscribe(logSub());
     }
 
     private static Publisher<Integer> mapPub(Publisher<Integer> publisher, Function<Integer, Integer> func) {
