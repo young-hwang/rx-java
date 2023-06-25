@@ -5,10 +5,10 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 @Slf4j
-public class DelegateSubscriber implements Subscriber<Integer> {
+public class DelegateSubscriber<T> implements Subscriber<T> {
     private Subscriber sub;
 
-    public DelegateSubscriber(Subscriber subscriber) {
+    public DelegateSubscriber(Subscriber<? super T> subscriber) {
         this.sub = subscriber;
     }
 
@@ -19,9 +19,9 @@ public class DelegateSubscriber implements Subscriber<Integer> {
     }
 
     @Override
-    public void onNext(Integer integer) {
+    public void onNext(T i) {
         log.debug("onNext map");
-        sub.onNext(integer);
+        sub.onNext(i);
     }
 
     @Override
