@@ -18,8 +18,26 @@ public class PubSub {
         Publisher<Integer> publisher = iterPub(Stream.iterate(1, a -> a + 1).limit(10).collect(Collectors.toList()));
         Publisher<Integer> mapPublisher = mapPub(publisher, s -> s * 10);
         Publisher<Integer> mapPublisher2 = mapPub(mapPublisher, s -> -s);
+        Publisher<Integer> sumPublisher = sumPub(publisher);
 
-        mapPublisher2.subscribe(logSub());
+        sumPublisher.subscribe(logSub());
+    }
+
+    private static Publisher<Integer> sumPub(Publisher<Integer> publisher) {
+        return s -> publisher.subscribe(new DelegateSubscriber(s) {
+            int sum = 0;
+
+            @Override
+            public void onNext(Integer integer) {
+                sum += integer;
+            }
+
+            @Override
+            public void onComplete() {
+                s.onNext(sum);
+                s.onComplete();
+            }
+        });
     }
 
     private static Publisher<Integer> mapPub(Publisher<Integer> publisher, Function<Integer, Integer> func) {
