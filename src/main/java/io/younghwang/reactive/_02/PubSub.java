@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 public class PubSub {
     public static void main(String[] args) {
         Publisher<Integer> publisher = iterPub(Stream.iterate(1, a -> a + 1).limit(10).collect(Collectors.toList()));
-        Publisher<Integer> mapPublisher = mapPub(publisher, s -> s * 10);
+        Publisher<String> mapPublisher = mapPub(publisher, s -> "[" + s + "]");
 //        Publisher<Integer> mapPublisher2 = mapPub(mapPublisher, s -> -s);
 //        Publisher<Integer> sumPublisher = sumPub(publisher);
 //        Publisher<Integer> reducePublisher = reducePub(publisher, 0, (a, b) -> a + b);
@@ -63,11 +63,11 @@ public class PubSub {
 //        });
 //    }
 
-    private static <T> Publisher<T> mapPub(Publisher<T> publisher, Function<T, T> func) {
-        return new Publisher<T>() {
+    private static <T, R> Publisher<R> mapPub(Publisher<T> publisher, Function<T, R> func) {
+        return new Publisher<R>() {
             @Override
-            public void subscribe(Subscriber<? super T> sub) {
-                publisher.subscribe(new DelegateSubscriber<T>(sub) {
+            public void subscribe(Subscriber<? super R> sub) {
+                publisher.subscribe(new DelegateSubscriber<T, R>(sub) {
                     @Override
                     public void onNext(T i) {
                         sub.onNext(func.apply(i));

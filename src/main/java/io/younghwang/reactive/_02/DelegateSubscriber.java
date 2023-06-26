@@ -5,10 +5,10 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 @Slf4j
-public class DelegateSubscriber<T> implements Subscriber<T> {
+public class DelegateSubscriber<T, R> implements Subscriber<T> {
     private Subscriber sub;
 
-    public DelegateSubscriber(Subscriber<? super T> subscriber) {
+    public DelegateSubscriber(Subscriber<? super R> subscriber) {
         this.sub = subscriber;
     }
 
