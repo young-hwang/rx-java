@@ -5,6 +5,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,35 +17,36 @@ import java.util.stream.Stream;
 public class PubSub {
     public static void main(String[] args) {
         Publisher<Integer> publisher = iterPub(Stream.iterate(1, a -> a + 1).limit(10).collect(Collectors.toList()));
-        Publisher<String> mapPublisher = mapPub(publisher, s -> "[" + s + "]");
+//        Publisher<String> mapPublisher = mapPub(publisher, s -> "[" + s + "]");
 //        Publisher<Integer> mapPublisher2 = mapPub(mapPublisher, s -> -s);
 //        Publisher<Integer> sumPublisher = sumPub(publisher);
-//        Publisher<Integer> reducePublisher = reducePub(publisher, 0, (a, b) -> a + b);
+        Publisher<String> reducePublisher = reducePub(publisher, "", (a, b) -> a + " " + b);
 
-        mapPublisher.subscribe(logSub());
+        reducePublisher.subscribe(logSub());
     }
 
-//    private static Publisher<Integer> reducePub(Publisher<Integer> publisher, int i, BiFunction<Integer, Integer, Integer> biFunction) {
-//        return new Publisher<Integer>() {
-//            @Override
-//            public void subscribe(Subscriber<? super Integer> s) {
-//                publisher.subscribe(new DelegateSubscriber(s) {
-//                    private int value = i;
-//
-//                    @Override
-//                    public void onNext(Integer integer) {
-//                        value = biFunction.apply(value, integer);
-//                    }
-//
-//                    @Override
-//                    public void onComplete() {
-//                        s.onNext(value);
-//                        s.onComplete();
-//                    }
-//                });
-//            }
-//        };
-//    }
+    private static <T, B> Publisher<T> reducePub(Publisher<B> publisher, T i, BiFunction<T, B, T> biFunction) {
+        return new Publisher<T>() {
+            @Override
+            public void subscribe(Subscriber<? super T> s) {
+                publisher.subscribe(new DelegateSubscriber<B, T>(s) {
+                    private T value = i;
+
+                    @Override
+                    public void onNext(B integer) {
+                        value = biFunction.apply(value, integer);
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                        s.onNext(this.value);
+                        s.onComplete();
+                    }
+                });
+            }
+        };
+    }
 //
 //    private static Publisher<Integer> sumPub(Publisher<Integer> publisher) {
 //        return s -> publisher.subscribe(new DelegateSubscriber(s) {
