@@ -21,6 +21,7 @@ public class ReactorEx {
                 })
                 .log()
                 .map(s -> 10 * s)
+                .reduce((a, b) -> a + b)
                 .log()
                 .subscribe(System.out::println);
     }
