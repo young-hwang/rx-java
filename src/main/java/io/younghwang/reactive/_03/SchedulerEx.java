@@ -35,20 +35,20 @@ public class SchedulerEx {
         };
 
         // 중간 publisher
-        Publisher<Integer> pubSubOn = s -> {
-            ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
-                @Override
-                public String getThreadNamePrefix() {
-                    return "publish thread";
-                }
-            });
-            executorService.execute(() -> {
-                pub.subscribe(s);
-            });
-        };
+//        Publisher<Integer> pubSubOn = s -> {
+//            ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
+//                @Override
+//                public String getThreadNamePrefix() {
+//                    return "publish thread";
+//                }
+//            });
+//            executorService.execute(() -> {
+//                pub.subscribe(s);
+//            });
+//        };
 
         Publisher<Integer> pubPubOn = sub -> {
-            pubSubOn.subscribe(new Subscriber<Integer>() {
+            pub.subscribe(new Subscriber<Integer>() {
                 ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
                     @Override
                     public String getThreadNamePrefix() {
@@ -73,7 +73,8 @@ public class SchedulerEx {
 
                 @Override
                 public void onComplete() {
-                    sub.onComplete();
+                    executorService.execute(() -> sub.onComplete());
+                    executorService.shutdown();
                 }
             });
         };
