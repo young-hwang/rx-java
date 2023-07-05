@@ -74,7 +74,8 @@ public class SchedulerEx {
                 @Override
                 public void onComplete() {
                     executorService.execute(() -> sub.onComplete());
-                    executorService.shutdown();
+                    executorService.shutdown(); // graceful shutdown
+                    executorService.shutdownNow(); // immediate shutdown
                 }
             });
         };
