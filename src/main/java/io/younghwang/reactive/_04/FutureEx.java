@@ -22,7 +22,18 @@ public class FutureEx {
             Thread.sleep(2000);
             log.info("Hello, world");
             return "Hello, world";
-        });
+        }) {
+            @Override
+            protected void done() {
+                try {
+                    System.out.println(get());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } catch (ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
 
         es.execute(ft);
         log.info(ft.get());
