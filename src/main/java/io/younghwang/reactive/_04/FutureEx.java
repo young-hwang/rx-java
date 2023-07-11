@@ -1,5 +1,6 @@
 package io.younghwang.reactive._04;
 
+import io.younghwang.reactive._01.Ob;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
@@ -11,12 +12,29 @@ public class FutureEx {
         void onSuccess(String result);
     }
 
+    interface ExceptionCallback {
+        void onError(Throwable t);
+    }
+
     public static class CallbackFutureTask extends FutureTask<String> {
         SuccessCallback sc;
+        ExceptionCallback ec;
 
-        public CallbackFutureTask(Callable<String> callable, SuccessCallback sc) {
+        public CallbackFutureTask(Callable<String> callable, SuccessCallback sc, ExceptionCallback ec) {
             super(callable);
             this.sc = Objects.requireNonNull(sc);
+            this.ec = Objects.requireNonNull(ec);
+        }
+
+        @Override
+        protected void done() {
+            try {
+                sc.onSuccess(get());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                ec.onError(e.getCause());
+            }
         }
     }
 
@@ -41,9 +59,7 @@ public class FutureEx {
             protected void done() {
                 try {
                     System.out.println(get());
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                } catch (ExecutionException e) {
+                } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -55,9 +71,10 @@ public class FutureEx {
         // CallbackFutureTask 활용
         CallbackFutureTask callbackFutureTask = new CallbackFutureTask(() -> {
             Thread.sleep(2000);
+            if (1 == 1) throw new RuntimeException("Error");
             log.info("Hello, world - callbackFutureTask");
             return "Hello, world";
-        }, System.out::println);
+        }, System.out::println, e -> System.out.println("Error: " + e.getMessage()));
         es.execute(callbackFutureTask);
         log.info("Exit");
     }
