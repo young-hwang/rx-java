@@ -15,16 +15,16 @@ public class SchedulerEx {
     // 1. publishOn: publisher는 빠르나 subscriber가 느린 경우 사용, subscriber에 스레드 처리
     // 2. subscribeOn: publisher는 느리나 subscriber가 빠른 경우 사용, publisher에 스레드 처리
     public static void main(String[] args) {
-        Publisher<Integer> pub = s -> {
-            s.onSubscribe(new Subscription() {
+        Publisher<Integer> mainPublisher = subscriber -> {
+            subscriber.onSubscribe(new Subscription() {
                 @Override
                 public void request(long n) {
-                    s.onNext(1);
-                    s.onNext(2);
-                    s.onNext(3);
-                    s.onNext(4);
-                    s.onNext(5);
-                    s.onComplete();
+                    subscriber.onNext(1);
+                    subscriber.onNext(2);
+                    subscriber.onNext(3);
+                    subscriber.onNext(4);
+                    subscriber.onNext(5);
+                    subscriber.onComplete();
                 }
 
                 @Override
@@ -35,20 +35,25 @@ public class SchedulerEx {
         };
 
         // 중간 publisher
-//        Publisher<Integer> pubSubOn = s -> {
+        // subscribeOn
+        // Typically use for slow publisher, fast subscriber
+//        Publisher<Integer> subscribeOn = subscriber -> {
 //            ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
 //                @Override
 //                public String getThreadNamePrefix() {
-//                    return "publish thread";
+//                    return "publisher thread";
 //                }
 //            });
 //            executorService.execute(() -> {
-//                pub.subscribe(s);
+//                mainPublisher.subscribe(subscriber);
 //            });
 //        };
 
-        Publisher<Integer> pubPubOn = sub -> {
-            pub.subscribe(new Subscriber<Integer>() {
+        // 중간 publisher
+        // publishOn
+        // Typically use for fast publisher, slow subscriber
+        Publisher<Integer> publishOn = subscriber -> {
+            mainPublisher.subscribe(new Subscriber<Integer>() {
                 ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
                     @Override
                     public String getThreadNamePrefix() {
@@ -58,29 +63,33 @@ public class SchedulerEx {
 
                 @Override
                 public void onSubscribe(Subscription s) {
-                    sub.onSubscribe(s);
+                    log.debug("publishOn onSubscribe");
+                    subscriber.onSubscribe(s);
                 }
 
                 @Override
                 public void onNext(Integer integer) {
-                    executorService.execute(() -> sub.onNext(integer));
+                    log.debug("publishOn onNext: {}", integer);
+                    executorService.execute(() -> subscriber.onNext(integer));
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    sub.onError(t);
+                    log.debug("publishOn onError: {}", t);
+                    subscriber.onError(t);
                 }
 
                 @Override
                 public void onComplete() {
-                    executorService.execute(() -> sub.onComplete());
+                    log.debug("publishOn onComplete");
+                    executorService.execute(() -> subscriber.onComplete());
                     executorService.shutdown(); // graceful shutdown
-                    executorService.shutdownNow(); // immediate shutdown
+//                    executorService.shutdownNow(); // immediate shutdown
                 }
             });
         };
 
-        pubPubOn.subscribe(new Subscriber<Integer>() {
+        publishOn.subscribe(new Subscriber<Integer>() {
             @Override
             public void onSubscribe(Subscription s) {
                 log.debug("onSubscribe");
