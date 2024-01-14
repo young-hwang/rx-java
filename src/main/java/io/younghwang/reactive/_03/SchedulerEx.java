@@ -37,23 +37,24 @@ public class SchedulerEx {
         // 중간 publisher
         // subscribeOn
         // Typically use for slow publisher, fast subscriber
-//        Publisher<Integer> subscribeOn = subscriber -> {
-//            ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
-//                @Override
-//                public String getThreadNamePrefix() {
-//                    return "publisher thread";
-//                }
-//            });
-//            executorService.execute(() -> {
-//                mainPublisher.subscribe(subscriber);
-//            });
-//        };
+        Publisher<Integer> subscribeOn = subscriber -> {
+            ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
+                @Override
+                public String getThreadNamePrefix() {
+                    return "publisher thread";
+                }
+            });
+            executorService.execute(() -> {
+                mainPublisher.subscribe(subscriber);
+            });
+            executorService.shutdown();
+        };
 
         // 중간 publisher
         // publishOn
         // Typically use for fast publisher, slow subscriber
         Publisher<Integer> publishOn = subscriber -> {
-            mainPublisher.subscribe(new Subscriber<Integer>() {
+            subscribeOn.subscribe(new Subscriber<Integer>() {
                 ExecutorService executorService = Executors.newSingleThreadExecutor(new CustomizableThreadFactory() {
                     @Override
                     public String getThreadNamePrefix() {
