@@ -12,8 +12,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -23,11 +30,13 @@ import java.util.concurrent.TimeUnit;
 public class ReactiveApplication {
     @RestController
     public static class MyController {
-//        @GetMapping("/async")
-//        public String async() throws InterruptedException {
-//            TimeUnit.SECONDS.sleep(2);
-//            return "Hello";
-//        }
+        Queue<DeferredResult<String>> queue = new ConcurrentLinkedQueue<>();
+
+        @GetMapping("/async")
+        public String async() throws InterruptedException {
+            TimeUnit.SECONDS.sleep(2);
+            return "Hello";
+        }
 
         @GetMapping("/async1")
         public Callable<String> async1() {
@@ -37,6 +46,45 @@ public class ReactiveApplication {
                 TimeUnit.SECONDS.sleep(2);
                 return "Hello";
             };
+        }
+
+        @GetMapping("/deferred")
+        public DeferredResult<String> deferred() {
+            log.info("async1");
+            DeferredResult<String> objectDeferredResult = new DeferredResult<>(6000000L);
+            queue.add(objectDeferredResult);
+            return objectDeferredResult;
+        }
+
+        @GetMapping("/deferred/count")
+        public String deferredCount() {
+            return String.valueOf(queue.size());
+        }
+
+        @GetMapping("/deferred/event")
+        public String deferredEvent(String msg) {
+            for (DeferredResult<String> result : queue) {
+                result.setResult("Hello" + msg);
+                queue.remove(result);
+            }
+            return "OK";
+        }
+
+        @GetMapping("/emitter")
+        public ResponseBodyEmitter emitter() {
+            ResponseBodyEmitter emitter = new ResponseBodyEmitter();
+
+            Executors.newSingleThreadExecutor().submit(() -> {
+                try {
+                    for (int i = 0; i < 50; i++) {
+                        emitter.send("<p>Stream " + i + "</p>");
+                        TimeUnit.SECONDS.sleep(2);
+                    }
+                } catch (Exception e) {
+
+                }
+            });
+            return emitter;
         }
     }
 
@@ -82,6 +130,7 @@ public class ReactiveApplication {
         te.initialize();
         return te;
     }
+
     public static void main(String[] args) {
         SpringApplication.run(ReactiveApplication.class, args);
     }
